@@ -435,20 +435,44 @@ G4VPhysicalVolume *ConstructInSitumPMT::Construct()
       new G4UnionSolid("WCmPMT", solidMultiPMT_vessel, mPMT_top_cap_vessel, 0, G4ThreeVector(0, 0, vessel_cylinder_height - domeCut));
 
   G4Box *solidInSitumPMT = new G4Box("solidInSitumPMT", 3.5 * m, 3.5 * m, 3.5 * m);
-  G4LogicalVolume *logicWCMultiPMT =
+  G4LogicalVolume *logicWCMultiPMT_outer =
       new G4LogicalVolume(solidInSitumPMT,
                           Air,
-                          "WCMultiPMT",
+                          // Water, 
+                          "WCMultiPMT_outer",
                           0, 0, 0);
 
-  G4VPhysicalVolume *physWorld = new G4PVPlacement(0,
+  G4VPhysicalVolume *outerWorld = new G4PVPlacement(0,
                                                    G4ThreeVector(0., 0., 0.),
-                                                   logicWCMultiPMT,
-                                                   "physWorld",
+                                                   logicWCMultiPMT_outer,
+                                                   "outerWorld",
                                                    0,
                                                    false,
                                                    0,
                                                    true);
+
+  G4Box *WaterLevel = new G4Box("WaterLevel", 3.49 * m, 3.49 * m, 0.46757 * m);
+  G4LogicalVolume *logicWCMultiPMT =
+      new G4LogicalVolume(WaterLevel,
+                          //Air,
+                          Water, 
+                          "WCMultiPMT",
+                          0, 0, 0);       
+                          
+  G4VPhysicalVolume *physWorld = new G4PVPlacement(0,
+                                                   G4ThreeVector(0., 0., 0.),
+                                                   logicWCMultiPMT,
+                                                   "physWorld",
+                                                   logicWCMultiPMT_outer,
+                                                   false,
+                                                   0,
+                                                   true);
+
+  G4VisAttributes *worldAttributes = new G4VisAttributes();
+  worldAttributes->SetColor(0.5, 0.5, 0.5, 0.5);
+  worldAttributes->SetVisibility(true);
+  worldAttributes->SetForceSolid(true);
+  logicWCMultiPMT->SetVisAttributes(worldAttributes);
 
   G4Sphere *domeSphere =
       new G4Sphere("DomeSphere",
@@ -645,7 +669,7 @@ G4VPhysicalVolume *ConstructInSitumPMT::Construct()
   G4VisAttributes *VisAttYellow = new G4VisAttributes(G4Colour(1.0, 1., 0.));
   VisAttYellow->SetForceSolid(true);
 
-  G4RunManager::GetRunManager()->DefineWorldVolume(physWorld);
+  G4RunManager::GetRunManager()->DefineWorldVolume(outerWorld);
 
-  return physWorld;
+  return outerWorld;
 }
