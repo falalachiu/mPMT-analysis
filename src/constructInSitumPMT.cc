@@ -9,6 +9,7 @@ Author:    Mohit Gola 5th February 2024
 #include "G4MultiUnion.hh"
 #include "G4SubtractionSolid.hh"
 #include "WCSimTuningParameters.hh"
+#include "G4LogicalSkinSurface.hh"
 #include <algorithm>
 #include <vector>
 #include <tuple>
@@ -435,20 +436,44 @@ G4VPhysicalVolume *ConstructInSitumPMT::Construct()
       new G4UnionSolid("WCmPMT", solidMultiPMT_vessel, mPMT_top_cap_vessel, 0, G4ThreeVector(0, 0, vessel_cylinder_height - domeCut));
 
   G4Box *solidInSitumPMT = new G4Box("solidInSitumPMT", 3.5 * m, 3.5 * m, 3.5 * m);
-  G4LogicalVolume *logicWCMultiPMT =
+  G4LogicalVolume *logicWCMultiPMT_outer =
       new G4LogicalVolume(solidInSitumPMT,
                           Air,
-                          "WCMultiPMT",
+                          // Water, 
+                          "WCMultiPMT_outer",
                           0, 0, 0);
 
-  G4VPhysicalVolume *physWorld = new G4PVPlacement(0,
+  G4VPhysicalVolume *outerWorld = new G4PVPlacement(0,
                                                    G4ThreeVector(0., 0., 0.),
-                                                   logicWCMultiPMT,
-                                                   "physWorld",
+                                                   logicWCMultiPMT_outer,
+                                                   "outerWorld",
                                                    0,
                                                    false,
                                                    0,
                                                    true);
+
+  G4Box *WaterLevel = new G4Box("WaterLevel", 3.49 * m, 3.49 * m, 3.49 * m);
+  G4LogicalVolume *logicWCMultiPMT =
+      new G4LogicalVolume(WaterLevel,
+                          //Air,
+                          Water, 
+                          "WCMultiPMT",
+                          0, 0, 0);       
+                          
+  G4VPhysicalVolume *physWorld = new G4PVPlacement(0,
+                                                   G4ThreeVector(0., 0., 0.),
+                                                   logicWCMultiPMT,
+                                                   "physWorld",
+                                                   logicWCMultiPMT_outer,
+                                                   false,
+                                                   0,
+                                                   true);
+
+  G4VisAttributes *worldAttributes = new G4VisAttributes();
+  worldAttributes->SetColor(0.5, 0.5, 0.5, 0.5);
+  worldAttributes->SetVisibility(true);
+  worldAttributes->SetForceSolid(true);
+  logicWCMultiPMT->SetVisAttributes(worldAttributes);
 
   G4Sphere *domeSphere =
       new G4Sphere("DomeSphere",
@@ -499,6 +524,8 @@ G4VPhysicalVolume *ConstructInSitumPMT::Construct()
                     0,
                     true);
 
+  new G4LogicalSkinSurface("cylinderSkin", logicCylinder, PlasticSkinSurface);
+
   G4VisAttributes *cylinderAttributes = new G4VisAttributes();
   cylinderAttributes->SetColor(0.2, 0.2, 0.2, 1.0);
   cylinderAttributes->SetVisibility(true);
@@ -524,6 +551,8 @@ G4VPhysicalVolume *ConstructInSitumPMT::Construct()
   G4LogicalVolume *logicMatrix = new G4LogicalVolume(solidMatrix,
                                                      Plastic,
                                                      "logicMatrix");
+
+  new G4LogicalSkinSurface("matrixSkinSurface", logicMatrix, PlasticSkinSurface);
 
   G4double gelRmin = 323.5 * mm;
   G4Sphere *solidGelSphere = new G4Sphere("solidGelSphere",
@@ -586,6 +615,9 @@ G4VPhysicalVolume *ConstructInSitumPMT::Construct()
                     false,
                     0,
                     true);
+
+  new G4LogicalSkinSurface("InsitumPMTBSSkinSurface", logicBS, PlasticSkinSurface);
+
   G4VisAttributes *VisAttRed = new G4VisAttributes(G4Colour(1.0, 0., 0.));
   VisAttRed->SetForceSolid(true);
   logicBS->SetVisAttributes(VisAttRed);
@@ -645,7 +677,7 @@ G4VPhysicalVolume *ConstructInSitumPMT::Construct()
   G4VisAttributes *VisAttYellow = new G4VisAttributes(G4Colour(1.0, 1., 0.));
   VisAttYellow->SetForceSolid(true);
 
-  G4RunManager::GetRunManager()->DefineWorldVolume(physWorld);
+  G4RunManager::GetRunManager()->DefineWorldVolume(outerWorld);
 
-  return physWorld;
+  return outerWorld;
 }
