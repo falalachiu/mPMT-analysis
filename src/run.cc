@@ -4,39 +4,70 @@ Author:    Mohit Gola 10th July 2023
 
 #include "run.hh"
 
+#include <fstream>
+#include <sstream>
+
 MyRunAction::MyRunAction()
 {
-  G4AnalysisManager *man = G4AnalysisManager::Instance();
+  G4AnalysisManager::Instance();
 }
 
 MyRunAction::~MyRunAction()
 {
-  G4AnalysisManager *man = G4AnalysisManager::Instance();
+  auto *man = G4AnalysisManager::Instance();
+  man->Write();
   man->CloseFile();
 }
 
 void MyRunAction::BeginOfRunAction(const G4Run *run)
 {
-  G4AnalysisManager *man = G4AnalysisManager::Instance();
-  G4RunManager *runManager = G4RunManager::GetRunManager();
+  auto *man = G4AnalysisManager::Instance();
+  auto *runManager = G4RunManager::GetRunManager();
 
-  man->OpenFile(name_template + ".root");
+  if (!fileOpened)
+  {
+    int run_num = 0;
+    G4String filename;
 
-  G4int master_ntupleId = man->CreateNtuple("Photons_Master", "Photons_Master");
+    do
+    {
+      std::ostringstream oss;
+      oss << name_template;
+      if (run_num > 0)
+        oss << run_num;
+      oss << ".root";
 
-  man->CreateNtupleIColumn(master_ntupleId, "Scanpoint_ID");
-  man->CreateNtupleDColumn(master_ntupleId, "PosX_Initial");
-  man->CreateNtupleDColumn(master_ntupleId, "PosY_Initial");
-  man->CreateNtupleDColumn(master_ntupleId, "PosZ_Initial");
-  man->FinishNtuple(master_ntupleId);
+      filename = oss.str();
+      run_num++;
+    }
+    while (std::ifstream(filename).good());
 
-  std::stringstream strRunId;
+    outputFilename = filename;
+    man->OpenFile(outputFilename);
+
+    // Master ntuple (created ONCE)
+    master_ntupleId = man->CreateNtuple("Photons_Master", "Photons_Master");
+    man->CreateNtupleIColumn(master_ntupleId, "Scanpoint_ID");
+    man->CreateNtupleDColumn(master_ntupleId, "PosX_Initial");
+    man->CreateNtupleDColumn(master_ntupleId, "PosY_Initial");
+    man->CreateNtupleDColumn(master_ntupleId, "PosZ_Initial");
+    man->FinishNtuple(master_ntupleId);
+
+    fileOpened = true;
+  }
+
   runId = run->GetRunID();
+
+  std::ostringstream strRunId;
   strRunId << runId;
 
-  scanpoint_ntupleId = man->CreateNtuple("Photons_" + strRunId.str(), "Photons");
+  scanpoint_ntupleId =
+      man->CreateNtuple("Photons_" + strRunId.str(), "Photons");
+
   const G4UserEventAction *eventAction = runManager->GetUserEventAction();
-  MyEventAction *myEventAction = dynamic_cast<MyEventAction *>(const_cast<G4UserEventAction *>(eventAction));
+  auto *myEventAction =
+      dynamic_cast<MyEventAction *>(const_cast<G4UserEventAction *>(eventAction));
+
   myEventAction->SetScanpointNtupleID(scanpoint_ntupleId);
   myEventAction->ResetPhotNum();
 
@@ -55,13 +86,15 @@ void MyRunAction::BeginOfRunAction(const G4Run *run)
 
 void MyRunAction::EndOfRunAction(const G4Run *)
 {
-  G4AnalysisManager *man = G4AnalysisManager::Instance();
+  auto *man = G4AnalysisManager::Instance();
+  auto *runManager = G4RunManager::GetRunManager();
 
-  G4RunManager *runManager = G4RunManager::GetRunManager();
   const G4UserEventAction *eventAction = runManager->GetUserEventAction();
   if (eventAction)
   {
-    MyEventAction *myEventAction = dynamic_cast<MyEventAction *>(const_cast<G4UserEventAction *>(eventAction));
+    auto *myEventAction =
+        dynamic_cast<MyEventAction *>(const_cast<G4UserEventAction *>(eventAction));
+
     if (myEventAction)
     {
       man->FillNtupleIColumn(master_ntupleId, 0, runId);
@@ -69,8 +102,10 @@ void MyRunAction::EndOfRunAction(const G4Run *)
       man->FillNtupleDColumn(master_ntupleId, 2, myEventAction->GetPosY());
       man->FillNtupleDColumn(master_ntupleId, 3, myEventAction->GetPosZ());
       man->AddNtupleRow(master_ntupleId);
+
       myEventAction->ResetCounters();
     }
   }
-  man->Write();
 }
+
+
