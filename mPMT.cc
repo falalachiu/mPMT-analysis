@@ -55,7 +55,7 @@ int main(int argc, char **argv)
 
   MyActionInitialization<genmech> *actionman = new MyActionInitialization<genmech>(
       generator,
-      "output_mPMT");
+      "../../projects/def-blairt2k/fchiu/outputs/output_mPMT");
 
   runManager->SetUserInitialization(actionman);
   // pmtConstruction *subtractionPMT = new pmtConstruction();
