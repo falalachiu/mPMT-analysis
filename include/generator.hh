@@ -46,7 +46,7 @@ public:
 private:
   G4ParticleGun *fParticleGun;
   G4double angleDegrees;
-  G4double discRadius = 1 * mm;
+  G4double discRadius = 0 * mm;
   G4double angleRadians;
   G4double pAzimuthAngle = 0.0;
   G4double pZenithAngle = 0.0;
