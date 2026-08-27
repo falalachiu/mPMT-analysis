@@ -27,6 +27,8 @@ public:
 
 private:
   G4String name_template = "output";
+  G4String outputFilename;
+  G4bool fileOpened = false;
   G4int TotalNumAbsorbed;
   G4int TotalNumReflected;
   G4int TotalNumTransmitted;
