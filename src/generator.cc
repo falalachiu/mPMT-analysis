@@ -231,7 +231,7 @@ void Laser::GeneratePrimaries(G4Event *anEvent)
   fParticleGun->SetParticleMomentumDirection(finalDirection);
   fParticleGun->SetParticleEnergy(particleEnergy * eV);
   fParticleGun->SetParticlePosition(initialPosition);
-  fParticleGun->SetParticlePolarization(G4ThreeVector(0, 1.0, 0));
+  fParticleGun->SetParticlePolarization(G4ThreeVector(0, 1, 0));
 
   G4PrimaryVertex *vertex = new G4PrimaryVertex(initialPosition, 0.0);
   G4PrimaryParticle *primary = new G4PrimaryParticle(particle);
